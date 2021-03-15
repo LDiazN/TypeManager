@@ -2,7 +2,6 @@
     Main internal functions and data structures 
     for our type system simulator 
 */
-
 use std::collections::HashMap;
 use crate::utils;
 
@@ -43,6 +42,7 @@ pub enum Type {
 }
 
 /// Every possible error 
+#[derive(Debug, PartialEq)]
 pub enum TypeError {
     TypeRedefinition,
     NoZeroAlign,
@@ -52,6 +52,7 @@ pub enum TypeError {
 }
 
 /// Manager object controlling our stored types
+#[derive(Debug)]
 pub struct TypeManager {
     types: TypeTable
 }
@@ -278,7 +279,7 @@ impl Struct {
     }
 
     /// compute unpacked size 
-    fn unpacked_size(&self, manager: &TypeManager) -> usize {
+    pub fn unpacked_size(&self, manager: &TypeManager) -> usize {
         // We are going to compute the next available position in the struct
         // where the next data should be. When the loop ends, current position
         // will actually be our desired struct size
@@ -304,7 +305,7 @@ impl Struct {
     }
 
     /// compute packed size
-    fn packed_size(&self, manager: &TypeManager) -> usize {
+    pub fn packed_size(&self, manager: &TypeManager) -> usize {
         
         let mut sum = 0;
         for t in &self.members {
@@ -316,14 +317,14 @@ impl Struct {
     }
 
     /// Compute optimized size
-    fn optimized_size(&self, manager: &TypeManager) -> usize {
+    pub fn optimized_size(&self, manager: &TypeManager) -> usize {
         let (_, size) = self.get_optimal_layout(manager);
 
         size
     }
 
     /// Compute unpacked alignment
-    fn unpacked_align(&self, manager: &TypeManager) -> usize {
+    pub fn unpacked_align(&self, manager: &TypeManager) -> usize {
         manager
             .get(&self.members[0])
             .unwrap()
@@ -331,7 +332,7 @@ impl Struct {
     }
 
     #[allow(unused)] // por completitud, en realidad la alineacion no importa en empaquetado
-    fn packed_align(&self, manager: &TypeManager) -> usize {
+    pub fn packed_align(&self, manager: &TypeManager) -> usize {
         manager
             .get(&self.members[0])
             .unwrap()
@@ -340,7 +341,7 @@ impl Struct {
 
     /// Compute optimized aligment, it's different depending on the packing type
     /// since it takes the first element's aligment as its own
-    fn optimized_align(&self, manager: &TypeManager) -> usize {
+    pub fn optimized_align(&self, manager: &TypeManager) -> usize {
         let (layout, _) = self.get_optimal_layout(manager);
 
         manager
@@ -449,7 +450,7 @@ impl Union {
         );
 
         let packed_data  = format!(
-            "* Packed data:\n      + Tamaño: {}\n      + Perdida: {}", 
+            "* Empaquetado:\n      + Tamaño: {}\n      + Perdida: {}", 
             packed_size, 
             packed_loss
         );
@@ -498,12 +499,13 @@ impl Union {
                 ) -> usize
     {
         // Linear search for max value
-        let mut maxi = 0;
+        let mut maxi = usize::MIN;
         for t in &self.variants {
             // the type is available, our api to add types will ensure it
             let my_type = manager.get(&t).unwrap();
-
-            maxi = std::cmp::max(my_type.size(manager, struct_packing_size), maxi)
+            let size = my_type.size(manager, struct_packing_size);
+            
+            maxi = std::cmp::max(size, maxi)
         }
 
         maxi
@@ -560,5 +562,4 @@ impl TypeError {
             }
         }
     }
-
 }

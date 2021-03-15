@@ -1,4 +1,8 @@
 
+/*
+    Simple library with utility functions
+*/
+
 /// Lowest Common Multiple for two numbers
 /// ## Params
 /// `x` - a number
@@ -37,7 +41,6 @@ pub fn gcd(x : usize, y : usize) -> usize {
     }
 }
 
-
 /// Compute permutations for a vector of copy-able comparable
 /// elements 
 /// ## Params
@@ -50,7 +53,8 @@ pub fn permutations<T>(list : &mut Vec<T>) -> Vec<Vec<T>>
         T : Eq,
         T : Copy,
 {
- 
+    if list.is_empty() { return vec![] }
+
     let mut ans = Vec::with_capacity(2usize.pow(list.len() as u32));
 
     permutation_helper(list, 0, list.len()-1, &mut ans);
@@ -84,5 +88,4 @@ fn permutation_helper<T>(list :&mut Vec<T>, l : usize, r : usize, buff :&mut Vec
         list[i] = list[l].clone();
         list[l] = temp;
     }
-
 } 

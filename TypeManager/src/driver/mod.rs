@@ -82,7 +82,7 @@ impl Program {
                     self.manager
                     .display(&s)
                     .and_then(|msg|
-                        {println!("Símbolo: {}\n{}", s, msg); Ok(())}
+                        { println!("Símbolo: {}\n{}", s, msg); Ok(()) }
                     )
                     .err()
                     .and_then(handle_error); 
