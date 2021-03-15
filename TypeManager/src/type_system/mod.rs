@@ -161,9 +161,9 @@ impl TypeManager {
                 if u.variants.is_empty() {
                     return Err(TypeError::EmptyCompoundType)
                 }
+
                 Ok(())
             }
-
         }
     }
 }
@@ -216,6 +216,7 @@ impl Type {
 
 impl Atomic {
 
+    /// Create new atomic type
     pub fn new(representation : usize, alignment : usize) -> Atomic {
         Atomic {
             representation,
@@ -223,14 +224,17 @@ impl Atomic {
         }
     }
 
+    /// return human readable string with details for this type
     pub fn display(&self) -> String {
         format!("⚛️  Atómico:\n   * Representación: {}\n   * Alineación: {}", self.representation, self.alignment)
     }
 
+    /// get size
     pub fn size(&self) -> usize {
         self.representation
     }
 
+    /// Get alignment
     pub fn align(&self) -> usize {
         self.alignment
     }
@@ -238,12 +242,14 @@ impl Atomic {
 
 impl Struct {
 
+    /// Create a new struct
     pub fn new(members: TypeList) -> Struct {
         Struct {
             members,
         }
     }
 
+    /// Create human-readable string with information about this struct
     pub fn display(&self, manager : &TypeManager) -> String {
 
         let optimal_size  = self.optimized_size(manager);
@@ -271,6 +277,7 @@ impl Struct {
         format!("📦 Struct:\n{}\n{}\n{}\n", optimized_data, unpacked_data, packed_data)
     }
 
+    /// compute unpacked size 
     fn unpacked_size(&self, manager: &TypeManager) -> usize {
         // We are going to compute the next available position in the struct
         // where the next data should be. When the loop ends, current position
@@ -296,6 +303,7 @@ impl Struct {
         curr_pos
     }
 
+    /// compute packed size
     fn packed_size(&self, manager: &TypeManager) -> usize {
         
         let mut sum = 0;
@@ -307,12 +315,14 @@ impl Struct {
         sum
     }
 
+    /// Compute optimized size
     fn optimized_size(&self, manager: &TypeManager) -> usize {
         let (_, size) = self.get_optimal_layout(manager);
 
         size
     }
 
+    /// Compute unpacked alignment
     fn unpacked_align(&self, manager: &TypeManager) -> usize {
         manager
             .get(&self.members[0])
@@ -328,6 +338,8 @@ impl Struct {
             .align(manager, Struct::packed_align)
     }
 
+    /// Compute optimized aligment, it's different depending on the packing type
+    /// since it takes the first element's aligment as its own
     fn optimized_align(&self, manager: &TypeManager) -> usize {
         let (layout, _) = self.get_optimal_layout(manager);
 
@@ -337,6 +349,8 @@ impl Struct {
             .align(manager, Struct::optimized_align)
     }
 
+    /// Helper function that returns the optimal data layout for this struct (member's order)
+    /// and it's size
     fn get_optimal_layout(&self, manager : &TypeManager) -> (TypeList, usize) { // layout, size
         // Compute every permutation
         let permuts = self.members_permutations();
@@ -375,6 +389,8 @@ impl Struct {
 
         (layout,min)
     }
+
+    // compute every possible permutation for the member list
     fn members_permutations(&self) -> Vec<TypeList> {
             // get indices
             let indices = utils::permutations(&mut (0..self.members.len()).collect());
@@ -397,7 +413,6 @@ impl Struct {
 
 
 impl Union {
-
     /// Create a new union type from a list of types
     pub fn new(variants : TypeList) -> Union {
         Union {

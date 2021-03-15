@@ -1,6 +1,7 @@
 mod type_system;
 mod driver;
 mod utils;
+mod test_suite;
 
 fn main() {
     let mut program = driver::Program::new();

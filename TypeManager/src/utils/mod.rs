@@ -86,12 +86,3 @@ fn permutation_helper<T>(list :&mut Vec<T>, l : usize, r : usize, buff :&mut Vec
     }
 
 } 
-
-#[test]
-fn check_permutations() {
-    let mut v = vec!['a','b', 'c'];
-    for v in permutations(&mut v) {
-        println!("{:?}", v);
-    }
-    println!("Original: {:?}", v);
-}
