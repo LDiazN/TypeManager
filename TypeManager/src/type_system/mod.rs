@@ -13,8 +13,7 @@ pub type Name = String;
 pub type TypeList = Vec<Name>;
 // A map from names to type data
 pub type TypeTable = HashMap<Name, Type>;
-// Assumed word size for our machine
-pub const WORD_SIZE : usize = 4;
+
 
 /// Atomic Data type structure
 #[derive(Debug)]
@@ -180,6 +179,10 @@ impl Type {
         }
     }
 
+    /// Return alignment for this type depending on how structs are packed
+    /// ## Params
+    /// `manager` - Type manager to retrieve data from
+    /// `struct_packing_align` - 
     pub fn align(   &self, 
                     manager : &TypeManager, 
                     struct_packing_align : fn(&Struct, &TypeManager) -> usize
@@ -207,23 +210,6 @@ impl Type {
             Type::Atomic(a) => a.size(),
             Type::Struct(s) => struct_packing_size(s, manager),
             Type::Union(u)  => u.size(manager, struct_packing_size)
-        }
-    }
-
-    /// Return alignment for this type depending on how structs are packed
-    /// ## Params
-    /// `manager` - Type manager to retrieve data from
-    /// `struct_packing_align` - 
-    pub fn alignment(   &self,
-                    manager : &TypeManager,
-                    struct_packing_align : fn(&Struct, &TypeManager) -> usize
-                    ) -> usize 
-    {
-
-        match self {
-            Type::Atomic(a) => a.align(),
-            Type::Union(u)  => u.align(manager, struct_packing_align),
-            Type::Struct(s) => struct_packing_align(s, manager)
         }
     }
 }
@@ -331,11 +317,15 @@ impl Struct {
         manager
             .get(&self.members[0])
             .unwrap()
-            .size(manager, Struct::unpacked_align)
+            .align(manager, Struct::unpacked_align)
     }
 
+    #[allow(unused)] // por completitud, en realidad la alineacion no importa en empaquetado
     fn packed_align(&self, manager: &TypeManager) -> usize {
-        self.unpacked_align(manager)
+        manager
+            .get(&self.members[0])
+            .unwrap()
+            .align(manager, Struct::packed_align)
     }
 
     fn optimized_align(&self, manager: &TypeManager) -> usize {
@@ -355,19 +345,30 @@ impl Struct {
         let mut min = usize::MAX;
         let mut layout = vec![];
 
+        // Search for optimal layout
         for typelist in permuts {
-            let mut curr_size = 0;
-            for my_type in &typelist {
-                curr_size += manager
-                                .get(&my_type)
-                                .unwrap()
-                                .size(manager, Struct::optimized_size);
 
-                
+            let mut curr_pos = 0;
+            for typename in &typelist {
+
+                let my_type = manager
+                                .get(&typename)
+                                .unwrap();
+
+                // compute size and alignment
+                let size = my_type.size(manager, Struct::optimized_size);
+                let align = my_type.align(manager, Struct::optimized_align);
+
+                // if not aligned, add to position extra bytes to slign next field
+                if curr_pos % align != 0 {
+                    curr_pos += align - curr_pos % align;
+                }
+
+                curr_pos += size;
             }
             
-            if curr_size < min {
-                min = curr_size;
+            if curr_pos < min {
+                min = curr_pos;
                 layout = typelist;
             } 
         }
@@ -397,12 +398,19 @@ impl Struct {
 
 impl Union {
 
+    /// Create a new union type from a list of types
     pub fn new(variants : TypeList) -> Union {
         Union {
             variants
         }
     }
 
+    /// Return a human-readable string describing this type
+    /// ## Params
+    /// * `manager` - manager object where the types are stored
+    /// --
+    /// ## Return 
+    /// String with required details for our union type
     pub fn display(&self, manager : &TypeManager) -> String {
 
         // Comput loss & size for every possible packing type

@@ -43,10 +43,12 @@ impl Program {
         }
     }
 
+    /// Tells if this program should run
     pub fn should_run(&self) -> bool {
         self.running
     }
 
+    /// Run an iteration for the program
     pub fn run(&mut self) {
 
         // Command buffer: store user input in this line
@@ -121,6 +123,7 @@ impl Program {
         };
     }
 
+    /// Get next action from user input
     fn parse(input: String) -> Result<Action, ProgramError>{
         let mut input = input.split_whitespace();
 
@@ -227,6 +230,8 @@ impl Program {
 }
 
 impl ProgramError {
+
+    /// Get human readable description for this error
     pub fn display(&self) -> String {
         match self {
             ProgramError::InvalidAction(s) => {
@@ -241,7 +246,6 @@ impl ProgramError {
             ProgramError::TooManyArgs => {
                 format!("Demasiados argumentos")
             }
-
         }
     }
 }
